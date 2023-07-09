@@ -2,3 +2,7 @@ streamlit
 pandas
 tabula-py
 openpyxl
+re
+io
+tempfile
+
