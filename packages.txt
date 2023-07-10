@@ -1,3 +1,1 @@
 java-common
-default-jre-headless
-openjdk-11-jre-headless
