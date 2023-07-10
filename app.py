@@ -5,22 +5,22 @@ import io
 import tempfile
 import re
 
-st.title('Geradora Carteira em PDF')
+st.title('Geradora Extrato em CSV')
 
 st.image('https://th.bing.com/th/id/R.592a9b01eb077958f53aa385dc40f1d5?rik=ESxDzIaUACogwg&pid=ImgRaw&r=0')
 
 file = st.file_uploader(
-    'Importe a carteira em PDF',
+    'Importe o extrato em PDF',
     type='pdf'
 )
 
+os.environ["JAVA_HOME"] = "<path_to_java>"
+
 if file is not None:
-    # Convert PDF to CSV
     with tempfile.NamedTemporaryFile(suffix='.csv', delete=False) as temp_file:
         temp_file_path = temp_file.name
         tabula.convert_into(file, temp_file_path, output_format='csv', pages='all')
 
-    # Read CSV into DataFrame
     pdf = pd.read_csv(temp_file_path, encoding='latin1', decimal=',')
 
     conta = pdf.iloc[1][1]
@@ -56,11 +56,10 @@ if file is not None:
     csv_file_path = f'{file.name}.csv'
     pdf.to_csv(csv_file_path, sep=';', decimal=',', index=False)
 
-    # Download button for the CSV file
-    st.download_button('Baixar arquivo CSV', data=csv_file_path, file_name=f'Carteira.csv')
-
-    # Display DataFrame in DataTable
+    st.download_button('Baixar arquivo CSV', data=csv_file_path, file_name=f'Extrato_{n_conta}.csv')
     
     st.button('Copiar informações', on_click=pdf.to_clipboard, args=(None,))
 
     st.dataframe(pdf)
+
+
