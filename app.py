@@ -4,6 +4,8 @@ import tabula
 import io
 import tempfile
 import re
+import base64
+import os
 
 st.title('Geradora Extrato em CSV')
 
@@ -14,7 +16,6 @@ file = st.file_uploader(
     type='pdf'
 )
 
-os.environ["JAVA_HOME"] = "<path_to_java>"
 
 if file is not None:
     with tempfile.NamedTemporaryFile(suffix='.csv', delete=False) as temp_file:
@@ -47,19 +48,33 @@ if file is not None:
         else:
             return valor
         
+
     pdf.iloc[:, 2] = pdf.iloc[:, 2].apply(formatar_valor)
-
     pdf['Numero Conta'] = n_conta
+    pdf = pdf.rename(columns={pdf.columns[0]: 'Data', pdf.columns[1]: 'Histórico', pdf.columns[2]: 'Valor', pdf.columns[3]: 'Saldo'})
 
-    pdf = pdf.rename(columns = {pdf.columns[0]: 'Data', pdf.columns[1]: 'Histórico', pdf.columns[2]: 'Valor', pdf.columns[3]: 'Saldo'})
-
-    csv_file_path = f'{file.name}.csv'
+    csv_file_path = 'Extrato.csv'
     pdf.to_csv(csv_file_path, sep=';', decimal=',', index=False)
 
-    st.download_button('Baixar arquivo CSV', data=csv_file_path, file_name=f'Extrato_{n_conta}.csv')
-    
+    # Função auxiliar para fazer o download do arquivo CSV
+    def download_csv():
+        with open(csv_file_path, 'rb') as file:
+            csv_content = file.read()
+        b64 = base64.b64encode(csv_content).decode()
+        href = f'<a href="data:file/csv;base64,{b64}" download="Extrato.csv">Baixar arquivo CSV</a>'
+        return href
+
+    # Adicione o botão para download do arquivo CSV
+    st.markdown(download_csv(), unsafe_allow_html=True)
+
     st.button('Copiar informações', on_click=pdf.to_clipboard, args=(None,))
 
     st.dataframe(pdf)
+
+
+
+
+
+
 
 
