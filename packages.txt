@@ -1,2 +1,1 @@
-libgl1
-default-jre-headless
+default-jre
