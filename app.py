@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
-import yfinance as yf
-from datetime import date
+import requests
+import datetime
 from io import BytesIO
 
 st.title('Cotações de Fundos')
@@ -10,27 +10,54 @@ st.image('https://th.bing.com/th/id/R.592a9b01eb077958f53aa385dc40f1d5?rik=ESxDz
 
 file = st.text_input(
     'Digite o Fundo desejado'
-    
-)
+    )
 
-nome_fundo = f'{file}.SA'
+start = st.text_input('Digite a data inicial no formato (YYYY-MM-DD): ')
+end = st.text_input('Digite a data final no formato (YYYY-MM-DD): ')
 
-start = st.date_input('Escolha a data inicial: ')
+api_key = 'KBTYPUBRYOA4XJQI'
 
-end = st.date_input('Escolha a data final: ')
+nome_fundo = f'{file}'
 
-if start == '' or end == '':
-    st.write('Por favor, escolha as datas desejadas')
+if nome_fundo == '':
+    print('Digite o ticker')
 else:
-    cotacao = yf.download(nome_fundo, start=start , end= end, interval='1mo')
+    url = f'https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol={nome_fundo}.SAO&apikey={api_key}'
+    r = requests.get(url)
+    data = r.json()
 
-cotacao = cotacao['Close']
+    cotacoes = data['Monthly Time Series']
 
-if not cotacao.empty:
+    cotacoes = pd.DataFrame(cotacoes)
+
+    cotacoes = cotacoes.transpose()
+
+    cotacoes = cotacoes['4. close']
+
+    cotacoes = pd.DataFrame(cotacoes)
+
+    cotacoes = cotacoes.reset_index()
+
+    df = []
+    for data in range(len(cotacoes)):     
+        
+        if cotacoes['index'][data] <= end and cotacoes['index'][data] >= start:
+            resultado = cotacoes['index'][data]
+            df.append(resultado)
+
+    df = pd.DataFrame(df)
+
+    df = df.rename(columns = {0: 'index'})
+
+    df_merged = pd.merge(df, cotacoes, on='index', how='left')
+
+    df_merged['4. close'] = pd.to_numeric(df_merged['4. close'])
+
+if not df_merged.empty:
     buffer = BytesIO()
 
     with pd.ExcelWriter(buffer, mode='xlsx', engine='openpyxl') as writer:
-            cotacao.to_excel(writer, index=True)
+            df_merged.to_excel(writer, index=False)
 
     buffer.seek(0)
 
@@ -40,13 +67,4 @@ if not cotacao.empty:
 
     download_arquivo(buffer, f'Cotações_{nome_fundo}.xlsx')
 
-st.write('Suas cotações: ', cotacao)
-
-
-
-
-
-
-
-
-
+st.write('Suas cotações: ', df_merged)
